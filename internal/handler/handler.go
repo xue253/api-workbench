@@ -6,6 +6,7 @@ import (
 
 	"api-workbench/internal/model"
 	"api-workbench/internal/repository"
+	"api-workbench/internal/scheduler"
 
 	"github.com/gin-gonic/gin"
 )
@@ -420,6 +421,7 @@ func CreateScheduledTask(c *gin.Context) {
 		errorResp(c, 500, err.Error())
 		return
 	}
+	scheduler.AddTask(st)
 	success(c, st)
 }
 
@@ -435,11 +437,13 @@ func UpdateScheduledTask(c *gin.Context) {
 		errorResp(c, 500, err.Error())
 		return
 	}
+	scheduler.UpdateTask(st)
 	success(c, st)
 }
 
 func DeleteScheduledTask(c *gin.Context) {
 	id, _ := strconv.Atoi(c.Param("id"))
+	scheduler.RemoveTask(uint(id))
 	if err := repository.DeleteScheduledTask(uint(id)); err != nil {
 		errorResp(c, 500, err.Error())
 		return

@@ -8,6 +8,7 @@ import (
 	"api-workbench/internal/db"
 	"api-workbench/internal/middleware"
 	"api-workbench/internal/router"
+	"api-workbench/internal/scheduler"
 
 	"github.com/gin-gonic/gin"
 )
@@ -20,6 +21,8 @@ func main() {
 	gin.SetMode(config.AppConfig.Server.Mode)
 
 	db.Init()
+	scheduler.Init()
+	defer scheduler.Stop()
 
 	r := gin.Default()
 	r.Use(middleware.CORS())
