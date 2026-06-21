@@ -11,6 +11,7 @@ import ReportPage from './pages/Report'
 import SchedulePage from './pages/Schedule'
 import ApiExplorerPage from './pages/ApiExplorer'
 import ConsolePage from './pages/Console'
+import SettingsPage from './pages/Settings'
 
 const { Sider, Content } = Layout
 
@@ -152,7 +153,7 @@ function App() {
       case 'console': return <ConsolePage />
       case 'reports': return <ReportPage />
       case 'schedules': return <SchedulePage />
-      case 'settings': return <Placeholder title="设置" />
+      case 'settings': return <SettingsPage />
       default: return null
     }
   }
