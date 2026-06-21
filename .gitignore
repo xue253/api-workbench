@@ -6,6 +6,7 @@ __pycache__/
 venv/
 .DS_Store
 *.exe
+*.exe~
 go.sum
 logs/
 config.yaml
