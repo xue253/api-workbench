@@ -73,7 +73,14 @@ func Setup(r *gin.Engine) {
 			apir.DELETE("", handler.DeleteAPI)
 			apir.GET("/assertions", handler.ListAssertions)
 			apir.PUT("/assertions", handler.SaveAssertions)
+			apir.POST("/debug", handler.DebugAPI)
 		}
+
+		// Debug
+		auth.GET("/debug/history", handler.GetDebugHistory)
+
+		// Dynamic variables
+		auth.GET("/variables/dynamic", handler.GetDynamicFunctions)
 
 		// TestCase
 		tc := auth.Group("/test-cases/:id")

@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react'
 import { ConfigProvider, Layout, Menu, Card, Table, Button, Modal, Form, Input, Space, Popconfirm, message, theme, Select } from 'antd'
-import { ProjectOutlined, ApiOutlined, SettingOutlined, LogoutOutlined, UserOutlined, PlusOutlined, EnvironmentOutlined } from '@ant-design/icons'
+import { ProjectOutlined, ApiOutlined, SettingOutlined, LogoutOutlined, UserOutlined, PlusOutlined, EnvironmentOutlined, ThunderboltOutlined } from '@ant-design/icons'
 import { useProjectStore, Project } from './stores/projectStore'
 import { useAuthStore } from './stores/authStore'
 import LoginPage from './pages/Login'
 import EnvironmentPage from './pages/Environment'
+import DebugPage from './pages/Debug'
 
 const { Sider, Content } = Layout
 
@@ -128,6 +129,7 @@ function App() {
     { key: 'projects', icon: <ProjectOutlined />, label: '项目' },
     { key: 'environments', icon: <EnvironmentOutlined />, label: '环境配置' },
     { key: 'apis', icon: <ApiOutlined />, label: '接口库' },
+    { key: 'debug', icon: <ThunderboltOutlined />, label: '在线调试' },
     { key: 'settings', icon: <SettingOutlined />, label: '设置' },
   ]
 
@@ -136,6 +138,7 @@ function App() {
       case 'projects': return <ProjectManager />
       case 'environments': return <EnvironmentPage />
       case 'apis': return <Placeholder title="接口库" />
+      case 'debug': return <DebugPage />
       case 'settings': return <Placeholder title="设置" />
       default: return null
     }
