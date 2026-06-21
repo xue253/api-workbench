@@ -25,6 +25,7 @@ func Init() {
 	}
 
 	err = DB.AutoMigrate(
+		&model.User{},
 		&model.Project{},
 		&model.Environment{},
 		&model.EnvironmentVariable{},
