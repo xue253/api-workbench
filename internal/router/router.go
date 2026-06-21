@@ -25,7 +25,6 @@ func Setup(r *gin.Engine) {
 		auth.PUT("/user/profile", handler.UpdateProfile)
 		auth.PUT("/user/password", handler.ChangePassword)
 		auth.DELETE("/user/account", handler.DeleteAccount)
-		auth.GET("/users", handler.ListUsers)
 
 		// Project
 		auth.GET("/projects", handler.ListProjects)

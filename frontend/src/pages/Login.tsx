@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Card, Form, Input, Button, Tabs, message, Typography } from 'antd'
+import { Form, Input, Button, Tabs, message, Typography } from 'antd'
 import { UserOutlined, LockOutlined, MailOutlined } from '@ant-design/icons'
 import { useAuthStore } from '../stores/authStore'
 
@@ -8,32 +8,37 @@ const { Title, Text } = Typography
 export default function LoginPage({ onLogin }: { onLogin: () => void }) {
   const { login, register } = useAuthStore()
   const [loading, setLoading] = useState(false)
-  const [form] = Form.useForm()
+  const [loginForm] = Form.useForm()
+  const [registerForm] = Form.useForm()
 
   const handleLogin = async () => {
-    const values = await form.validateFields()
-    setLoading(true)
     try {
+      const values = await loginForm.validateFields()
+      setLoading(true)
       await login(values.username, values.password)
       message.success('登录成功')
       onLogin()
     } catch (err: any) {
+      if (err.errorFields) return
       message.error(err.message || '登录失败')
+    } finally {
+      setLoading(false)
     }
-    setLoading(false)
   }
 
   const handleRegister = async () => {
-    const values = await form.validateFields()
-    setLoading(true)
     try {
+      const values = await registerForm.validateFields()
+      setLoading(true)
       await register(values.username, values.password, values.email)
       message.success('注册成功')
       onLogin()
     } catch (err: any) {
+      if (err.errorFields) return
       message.error(err.message || '注册失败')
+    } finally {
+      setLoading(false)
     }
-    setLoading(false)
   }
 
   return (
@@ -76,7 +81,7 @@ export default function LoginPage({ onLogin }: { onLogin: () => void }) {
               key: 'login',
               label: '登录',
               children: (
-                <Form form={form} onFinish={handleLogin} layout="vertical" size="large">
+                <Form form={loginForm} onFinish={handleLogin} layout="vertical" size="large">
                   <Form.Item name="username" rules={[{ required: true, message: '请输入用户名' }]}>
                     <Input 
                       prefix={<UserOutlined style={{ color: '#86868b' }} />} 
@@ -115,7 +120,7 @@ export default function LoginPage({ onLogin }: { onLogin: () => void }) {
               key: 'register',
               label: '注册',
               children: (
-                <Form form={form} onFinish={handleRegister} layout="vertical" size="large">
+                <Form form={registerForm} onFinish={handleRegister} layout="vertical" size="large">
                   <Form.Item name="username" rules={[{ required: true, min: 3, max: 50, message: '用户名 3-50 个字符' }]}>
                     <Input 
                       prefix={<UserOutlined style={{ color: '#86868b' }} />} 

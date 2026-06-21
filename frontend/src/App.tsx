@@ -24,22 +24,31 @@ function ProjectManager() {
   const { projects, loading, fetch: fetchProjects, create, update, remove } = useProjectStore()
   const [modalOpen, setModalOpen] = useState(false)
   const [editing, setEditing] = useState<Project | null>(null)
+  const [saving, setSaving] = useState(false)
   const [form] = Form.useForm()
 
   useEffect(() => { fetchProjects() }, [])
 
   const handleSave = async () => {
-    const values = await form.validateFields()
-    if (editing) {
-      await update(editing.id, values)
-      message.success('更新成功')
-    } else {
-      await create(values)
-      message.success('创建成功')
+    try {
+      const values = await form.validateFields()
+      setSaving(true)
+      if (editing) {
+        await update(editing.id, values)
+        message.success('更新成功')
+      } else {
+        await create(values)
+        message.success('创建成功')
+      }
+      setModalOpen(false)
+      setEditing(null)
+      form.resetFields()
+    } catch (err: any) {
+      if (err.errorFields) return
+      message.error(err.message || '操作失败')
+    } finally {
+      setSaving(false)
     }
-    setModalOpen(false)
-    setEditing(null)
-    form.resetFields()
   }
 
   const columns = [
@@ -108,6 +117,7 @@ function ProjectManager() {
         open={modalOpen} 
         onOk={handleSave} 
         onCancel={() => setModalOpen(false)}
+        confirmLoading={saving}
         okButtonProps={{ style: { borderRadius: 8 } }}
         cancelButtonProps={{ style: { borderRadius: 8 } }}
       >
@@ -244,8 +254,8 @@ function App() {
                 <UserOutlined style={{ color: '#86868b', fontSize: 16 }} />
               </div>
               <div>
-                <div style={{ fontSize: 14, fontWeight: 500, color: '#1d1d1f' }}>{user?.username}</div>
-                <div style={{ fontSize: 12, color: '#86868b' }}>在线</div>
+                <div style={{ fontSize: 14, fontWeight: 500, color: '#1d1d1f' }}>{user?.username || '未登录'}</div>
+                <div style={{ fontSize: 12, color: '#86868b' }}>{user ? '在线' : '离线'}</div>
               </div>
             </div>
             <Button
