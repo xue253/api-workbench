@@ -9,6 +9,7 @@ import DebugPage from './pages/Debug'
 import TestCasePage from './pages/TestCase'
 import ReportPage from './pages/Report'
 import SchedulePage from './pages/Schedule'
+import ApiExplorerPage from './pages/ApiExplorer'
 
 const { Sider, Content } = Layout
 
@@ -143,7 +144,7 @@ function App() {
     switch (activeKey) {
       case 'projects': return <ProjectManager />
       case 'environments': return <EnvironmentPage />
-      case 'apis': return <Placeholder title="接口库" />
+      case 'apis': return <ApiExplorerPage />
       case 'debug': return <DebugPage />
       case 'testcases': return <TestCasePage />
       case 'reports': return <ReportPage />

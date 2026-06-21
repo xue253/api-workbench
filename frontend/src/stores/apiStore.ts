@@ -8,6 +8,8 @@ export interface Collection {
   name: string
   description: string
   sort_order: number
+  children?: Collection[]
+  apis?: APIItem[]
 }
 
 export interface APIItem {
@@ -23,75 +25,98 @@ export interface APIItem {
   query_params: string
   body_type: string
   body: string
-  proto_service: string
-  proto_method: string
   expected_status: number
   timeout_ms: number
 }
 
-interface ApiStoreState {
+interface APIState {
   collections: Collection[]
-  apis: APIItem[]
-  currentApi: APIItem | null
+  currentAPI: APIItem | null
   loading: boolean
-  fetchCollections: (pid: number) => Promise<void>
-  createCollection: (pid: number, data: Partial<Collection>) => Promise<Collection>
+  fetchCollections: (projectId: number) => Promise<void>
+  createCollection: (projectId: number, data: Partial<Collection>) => Promise<Collection>
   updateCollection: (id: number, data: Partial<Collection>) => Promise<void>
   deleteCollection: (id: number) => Promise<void>
-  fetchAPIs: (cid: number) => Promise<void>
-  getApi: (id: number) => Promise<void>
-  createAPI: (cid: number, data: Partial<APIItem>) => Promise<APIItem>
+  moveCollection: (id: number, parentId: number | null) => Promise<void>
+  createAPI: (collectionId: number, data: Partial<APIItem>) => Promise<APIItem>
   updateAPI: (id: number, data: Partial<APIItem>) => Promise<void>
   deleteAPI: (id: number) => Promise<void>
-  setCurrentApi: (a: APIItem | null) => void
+  getAPI: (id: number) => Promise<APIItem>
+  setCurrentAPI: (api: APIItem | null) => void
 }
 
-export const useApiStore = create<ApiStoreState>((set, get) => ({
+export const useAPIStore = create<APIState>((set, get) => ({
   collections: [],
-  apis: [],
-  currentApi: null,
+  currentAPI: null,
   loading: false,
 
-  fetchCollections: async (pid) => {
+  fetchCollections: async (projectId) => {
     set({ loading: true })
-    const res: any = await api.get(`/projects/${pid}/collections`)
-    set({ collections: res.data || [], loading: false })
+    const res: any = await api.get(`/projects/${projectId}/collections`)
+    const collections = res.data || []
+    
+    for (const col of collections) {
+      const apiRes: any = await api.get(`/collections/${col.id}/apis`)
+      col.apis = apiRes.data || []
+    }
+    
+    set({ collections, loading: false })
   },
-  createCollection: async (pid, data) => {
-    const res: any = await api.post(`/projects/${pid}/collections`, data)
-    set({ collections: [...get().collections, res.data] })
+
+  createCollection: async (projectId, data) => {
+    const res: any = await api.post(`/projects/${projectId}/collections`, data)
+    set({ collections: [...get().collections, { ...res.data, apis: [] }] })
     return res.data
   },
+
   updateCollection: async (id, data) => {
     const res: any = await api.put(`/collections/${id}`, data)
-    set({ collections: get().collections.map(c => c.id === id ? res.data : c) })
+    set({ collections: get().collections.map(c => c.id === id ? { ...c, ...res.data } : c) })
   },
+
   deleteCollection: async (id) => {
     await api.delete(`/collections/${id}`)
     set({ collections: get().collections.filter(c => c.id !== id) })
   },
 
-  fetchAPIs: async (cid) => {
-    set({ loading: true })
-    const res: any = await api.get(`/collections/${cid}/apis`)
-    set({ apis: res.data || [], loading: false })
+  moveCollection: async (id, parentId) => {
+    await api.post(`/collections/${id}/move`, { parent_id: parentId })
   },
-  getApi: async (id) => {
-    const res: any = await api.get(`/apis/${id}`)
-    set({ currentApi: res.data })
-  },
-  createAPI: async (cid, data) => {
-    const res: any = await api.post(`/collections/${cid}/apis`, data)
-    set({ apis: [...get().apis, res.data] })
+
+  createAPI: async (collectionId, data) => {
+    const res: any = await api.post(`/collections/${collectionId}/apis`, data)
+    const collections = get().collections.map(c => {
+      if (c.id === collectionId) {
+        return { ...c, apis: [...(c.apis || []), res.data] }
+      }
+      return c
+    })
+    set({ collections })
     return res.data
   },
+
   updateAPI: async (id, data) => {
     const res: any = await api.put(`/apis/${id}`, data)
-    set({ apis: get().apis.map(a => a.id === id ? res.data : a) })
+    const collections = get().collections.map(c => ({
+      ...c,
+      apis: (c.apis || []).map(a => a.id === id ? res.data : a)
+    }))
+    set({ collections })
   },
+
   deleteAPI: async (id) => {
     await api.delete(`/apis/${id}`)
-    set({ apis: get().apis.filter(a => a.id !== id) })
+    const collections = get().collections.map(c => ({
+      ...c,
+      apis: (c.apis || []).filter(a => a.id !== id)
+    }))
+    set({ collections })
   },
-  setCurrentApi: (a) => set({ currentApi: a }),
+
+  getAPI: async (id) => {
+    const res: any = await api.get(`/apis/${id}`)
+    return res.data
+  },
+
+  setCurrentAPI: (api) => set({ currentAPI: api }),
 }))
