@@ -107,6 +107,7 @@ func Setup(r *gin.Engine) {
 		auth.GET("/test-runs", handler.GetTestRuns)
 		auth.GET("/test-runs/:id", handler.GetTestRun)
 		auth.GET("/test-runs/:id/report", handler.GetTestRunReport)
+		auth.GET("/test-runs/:id/export", handler.ExportTestReport)
 
 		// TestCase Run
 		auth.POST("/test-cases/:id/run", handler.RunTestCase)
