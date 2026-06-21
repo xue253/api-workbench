@@ -65,6 +65,36 @@ func DebugAPI(c *gin.Context) {
 		timeoutMs = apiDef.TimeoutMs
 	}
 
+	// 加载环境变量
+	envVars := make(map[string]string)
+	if payload.EnvID > 0 {
+		var vars []model.EnvironmentVariable
+		if err := repository.GetEnvVarsByEnvID(payload.EnvID, &vars); err == nil {
+			for _, v := range vars {
+				envVars[v.Key] = v.Value
+			}
+		}
+	}
+
+	// 根据协议类型执行
+	if apiDef.Protocol == "grpc" {
+		body = variable.Replace(body, envVars, nil)
+
+		req := &engine.GRPCRequest{
+			Address:   url,
+			Service:   apiDef.ProtoService,
+			Method:    method,
+			Body:      body,
+			TimeoutMs: timeoutMs,
+		}
+
+		resp := engine.ExecuteGRPC(req)
+		resp.Body = engine.FormatGRPCResponse(resp.Body)
+		success(c, resp)
+		return
+	}
+
+	// HTTP 协议
 	// 解析 headers
 	headers := make(map[string]string)
 	if apiDef.Headers != "" {
@@ -81,17 +111,6 @@ func DebugAPI(c *gin.Context) {
 	}
 	for k, v := range payload.QueryParams {
 		queryParams[k] = v
-	}
-
-	// 加载环境变量
-	envVars := make(map[string]string)
-	if payload.EnvID > 0 {
-		var vars []model.EnvironmentVariable
-		if err := repository.GetEnvVarsByEnvID(payload.EnvID, &vars); err == nil {
-			for _, v := range vars {
-				envVars[v.Key] = v.Value
-			}
-		}
 	}
 
 	// 替换变量
