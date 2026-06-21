@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { ConfigProvider, Layout, Menu, Card, Table, Button, Modal, Form, Input, Space, Popconfirm, message, theme, Select } from 'antd'
-import { ProjectOutlined, ApiOutlined, SettingOutlined, LogoutOutlined, UserOutlined, PlusOutlined, EnvironmentOutlined, ThunderboltOutlined, PlayCircleOutlined, FileTextOutlined } from '@ant-design/icons'
+import { ProjectOutlined, ApiOutlined, SettingOutlined, LogoutOutlined, UserOutlined, PlusOutlined, EnvironmentOutlined, ThunderboltOutlined, PlayCircleOutlined, FileTextOutlined, ClockCircleOutlined } from '@ant-design/icons'
 import { useProjectStore, Project } from './stores/projectStore'
 import { useAuthStore } from './stores/authStore'
 import LoginPage from './pages/Login'
@@ -8,6 +8,7 @@ import EnvironmentPage from './pages/Environment'
 import DebugPage from './pages/Debug'
 import TestCasePage from './pages/TestCase'
 import ReportPage from './pages/Report'
+import SchedulePage from './pages/Schedule'
 
 const { Sider, Content } = Layout
 
@@ -134,6 +135,7 @@ function App() {
     { key: 'debug', icon: <ThunderboltOutlined />, label: '在线调试' },
     { key: 'testcases', icon: <PlayCircleOutlined />, label: '测试用例' },
     { key: 'reports', icon: <FileTextOutlined />, label: '测试报告' },
+    { key: 'schedules', icon: <ClockCircleOutlined />, label: '定时调度' },
     { key: 'settings', icon: <SettingOutlined />, label: '设置' },
   ]
 
@@ -145,6 +147,7 @@ function App() {
       case 'debug': return <DebugPage />
       case 'testcases': return <TestCasePage />
       case 'reports': return <ReportPage />
+      case 'schedules': return <SchedulePage />
       case 'settings': return <Placeholder title="设置" />
       default: return null
     }
