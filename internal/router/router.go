@@ -100,7 +100,16 @@ func Setup(r *gin.Engine) {
 			ts.PUT("", handler.UpdateTestSuite)
 			ts.DELETE("", handler.DeleteTestSuite)
 			ts.PUT("/cases", handler.SaveTestSuiteCases)
+			ts.POST("/run", handler.RunTestSuite)
 		}
+
+		// TestRun
+		auth.GET("/test-runs", handler.GetTestRuns)
+		auth.GET("/test-runs/:id", handler.GetTestRun)
+		auth.GET("/test-runs/:id/report", handler.GetTestRunReport)
+
+		// TestCase Run
+		auth.POST("/test-cases/:id/run", handler.RunTestCase)
 
 		// ScheduledTask
 		auth.PUT("/schedules/:id", handler.UpdateScheduledTask)

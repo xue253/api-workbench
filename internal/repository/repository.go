@@ -3,6 +3,8 @@ package repository
 import (
 	"api-workbench/internal/db"
 	"api-workbench/internal/model"
+
+	"gorm.io/gorm"
 )
 
 // User
@@ -145,6 +147,7 @@ func DeleteScheduledTask(id uint) error { return db.DB.Delete(&model.ScheduledTa
 func CreateTestRun(tr *model.TestRun) error { return db.DB.Create(tr).Error }
 func GetTestRunByID(id uint, tr *model.TestRun) error { return db.DB.First(tr, id).Error }
 func UpdateTestRun(tr *model.TestRun) error { return db.DB.Save(tr).Error }
+func GetTestRunDB() *gorm.DB { return db.DB }
 
 // TestRunDetail
 func CreateTestRunDetail(d *model.TestRunDetail) error { return db.DB.Create(d).Error }
