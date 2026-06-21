@@ -109,8 +109,8 @@ func Setup(r *gin.Engine) {
 		auth.GET("/test-runs/:id/report", handler.GetTestRunReport)
 		auth.GET("/test-runs/:id/export", handler.ExportTestReport)
 
-		// WebSocket
-		api.GET("/ws/test-runs/:id", handler.WebSocketTestRun)
+		// WebSocket (authenticated)
+		auth.GET("/ws/test-runs/:id", handler.WebSocketTestRun)
 
 		// TestCase Run
 		auth.POST("/test-cases/:id/run", handler.RunTestCase)

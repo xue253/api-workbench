@@ -42,5 +42,11 @@ func Load(path string) error {
 	if err := viper.ReadInConfig(); err != nil {
 		return err
 	}
-	return viper.Unmarshal(&AppConfig)
+	if err := viper.Unmarshal(&AppConfig); err != nil {
+		return err
+	}
+	if AppConfig.JWT.Secret == "" {
+		AppConfig.JWT.Secret = "default-secret-change-me"
+	}
+	return nil
 }

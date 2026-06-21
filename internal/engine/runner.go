@@ -3,6 +3,8 @@ package engine
 import (
 	"encoding/json"
 	"log"
+	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -80,11 +82,27 @@ func executeTestRun(run *model.TestRun, testCaseID uint, envVars map[string]stri
 			continue
 		}
 
-		detail := executeAPI(&apiDef, run.ID, testCaseID, 0, envVars)
-		if detail.Status == "passed" {
-			passed++
+		var datasets []model.TestDataSet
+		repository.GetTestDataSets(tca.ID, &datasets)
+
+		if len(datasets) > 0 {
+			for i, ds := range datasets {
+				var data map[string]string
+				_ = json.Unmarshal([]byte(ds.Data), &data)
+				detail := executeAPI(&apiDef, run.ID, testCaseID, i, data)
+				if detail.Status == "passed" {
+					passed++
+				} else {
+					failed++
+				}
+			}
 		} else {
-			failed++
+			detail := executeAPI(&apiDef, run.ID, testCaseID, 0, envVars)
+			if detail.Status == "passed" {
+				passed++
+			} else {
+				failed++
+			}
 		}
 	}
 
@@ -230,7 +248,8 @@ func executeAPI(apiDef *model.API, runID uint, testCaseID uint, dataIndex int, e
 		detail.ErrorMessage = resp.Error
 	} else {
 		detail.Status = "passed"
-		for _, assertion := range getAssertionsForAPI(apiDef.ID) {
+		assertions := getAssertionsForAPI(apiDef.ID)
+		for _, assertion := range assertions {
 			if !checkAssertion(assertion, resp) {
 				detail.Status = "failed"
 				detail.ErrorMessage = "断言失败: " + assertion.TargetType + " " + assertion.Expected
@@ -268,7 +287,11 @@ func checkAssertion(a model.Assertion, resp *DebugResponse) bool {
 func checkStatusAssertion(a model.Assertion, actual int) bool {
 	expected := 0
 	if a.Expected != "" {
-		_ = json.Unmarshal([]byte(a.Expected), &expected)
+		if err := json.Unmarshal([]byte(a.Expected), &expected); err != nil {
+			if n, err := strconv.Atoi(a.Expected); err == nil {
+				expected = n
+			}
+		}
 	}
 	switch a.Operator {
 	case "equals":
@@ -283,7 +306,11 @@ func checkStatusAssertion(a model.Assertion, actual int) bool {
 func checkTimeAssertion(a model.Assertion, actual int64) bool {
 	expected := int64(0)
 	if a.Expected != "" {
-		_ = json.Unmarshal([]byte(a.Expected), &expected)
+		if err := json.Unmarshal([]byte(a.Expected), &expected); err != nil {
+			if n, err := strconv.ParseInt(a.Expected, 10, 64); err == nil {
+				expected = n
+			}
+		}
 	}
 	switch a.Operator {
 	case "less_than":
@@ -300,27 +327,14 @@ func checkTimeAssertion(a model.Assertion, actual int64) bool {
 func checkBodyAssertion(a model.Assertion, body string) bool {
 	switch a.Operator {
 	case "contains":
-		return len(body) > 0 && len(a.Expected) > 0 && contains(body, a.Expected)
+		return len(body) > 0 && len(a.Expected) > 0 && strings.Contains(body, a.Expected)
 	case "not_contains":
-		return !(len(body) > 0 && len(a.Expected) > 0 && contains(body, a.Expected))
+		return !(len(body) > 0 && len(a.Expected) > 0 && strings.Contains(body, a.Expected))
 	case "equals":
 		return body == a.Expected
 	default:
 		return true
 	}
-}
-
-func contains(s, substr string) bool {
-	return len(s) >= len(substr) && (s == substr || len(s) > 0 && containsSubstr(s, substr))
-}
-
-func containsSubstr(s, substr string) bool {
-	for i := 0; i <= len(s)-len(substr); i++ {
-		if s[i:i+len(substr)] == substr {
-			return true
-		}
-	}
-	return false
 }
 
 func init() {

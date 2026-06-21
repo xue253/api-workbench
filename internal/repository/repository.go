@@ -23,7 +23,12 @@ func GetProjectsByUser(uid uint, list *[]model.Project) error {
 	return db.DB.Where("user_id = ?", uid).Find(list).Error
 }
 func GetProjectByID(id uint, p *model.Project) error { return db.DB.First(p, id).Error }
-func UpdateProject(p *model.Project) error { return db.DB.Save(p).Error }
+func UpdateProject(p *model.Project) error {
+	return db.DB.Model(&model.Project{}).Where("id = ?", p.ID).Updates(map[string]interface{}{
+		"name":        p.Name,
+		"description": p.Description,
+	}).Error
+}
 func DeleteProject(id uint) error { return db.DB.Delete(&model.Project{}, id).Error }
 
 // Environment
@@ -40,11 +45,15 @@ func GetEnvVarsByEnvID(eid uint, list *[]model.EnvironmentVariable) error {
 	return db.DB.Where("environment_id = ?", eid).Find(list).Error
 }
 func SaveEnvVars(eid uint, vars []model.EnvironmentVariable) error {
-	db.DB.Where("environment_id = ?", eid).Delete(&model.EnvironmentVariable{})
-	for i := range vars {
-		vars[i].EnvironmentID = eid
-	}
-	return db.DB.Create(&vars).Error
+	return db.DB.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Where("environment_id = ?", eid).Delete(&model.EnvironmentVariable{}).Error; err != nil {
+			return err
+		}
+		for i := range vars {
+			vars[i].EnvironmentID = eid
+		}
+		return tx.Create(&vars).Error
+	})
 }
 
 // Collection
@@ -73,11 +82,15 @@ func GetAssertionsByAPIID(aid uint, list *[]model.Assertion) error {
 	return db.DB.Where("api_id = ?", aid).Find(list).Error
 }
 func SaveAssertions(aid uint, assertions []model.Assertion) error {
-	db.DB.Where("api_id = ?", aid).Delete(&model.Assertion{})
-	for i := range assertions {
-		assertions[i].APIID = aid
-	}
-	return db.DB.Create(&assertions).Error
+	return db.DB.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Where("api_id = ?", aid).Delete(&model.Assertion{}).Error; err != nil {
+			return err
+		}
+		for i := range assertions {
+			assertions[i].APIID = aid
+		}
+		return tx.Create(&assertions).Error
+	})
 }
 
 // TestCase
@@ -94,11 +107,15 @@ func GetTestCaseAPIs(tcID uint, list *[]model.TestCaseAPI) error {
 	return db.DB.Where("test_case_id = ?", tcID).Order("sort_order").Find(list).Error
 }
 func SaveTestCaseAPIs(tcID uint, apis []model.TestCaseAPI) error {
-	db.DB.Where("test_case_id = ?", tcID).Delete(&model.TestCaseAPI{})
-	for i := range apis {
-		apis[i].TestCaseID = tcID
-	}
-	return db.DB.Create(&apis).Error
+	return db.DB.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Where("test_case_id = ?", tcID).Delete(&model.TestCaseAPI{}).Error; err != nil {
+			return err
+		}
+		for i := range apis {
+			apis[i].TestCaseID = tcID
+		}
+		return tx.Create(&apis).Error
+	})
 }
 
 // TestDataSet
@@ -106,11 +123,15 @@ func GetTestDataSets(tcaID uint, list *[]model.TestDataSet) error {
 	return db.DB.Where("test_case_api_id = ?", tcaID).Order("sort_order").Find(list).Error
 }
 func SaveTestDataSets(tcaID uint, datasets []model.TestDataSet) error {
-	db.DB.Where("test_case_api_id = ?", tcaID).Delete(&model.TestDataSet{})
-	for i := range datasets {
-		datasets[i].TestCaseAPIID = tcaID
-	}
-	return db.DB.Create(&datasets).Error
+	return db.DB.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Where("test_case_api_id = ?", tcaID).Delete(&model.TestDataSet{}).Error; err != nil {
+			return err
+		}
+		for i := range datasets {
+			datasets[i].TestCaseAPIID = tcaID
+		}
+		return tx.Create(&datasets).Error
+	})
 }
 
 // TestSuite
@@ -127,11 +148,119 @@ func GetTestSuiteCases(tsID uint, list *[]model.TestSuiteCase) error {
 	return db.DB.Where("test_suite_id = ?", tsID).Order("sort_order").Find(list).Error
 }
 func SaveTestSuiteCases(tsID uint, cases []model.TestSuiteCase) error {
-	db.DB.Where("test_suite_id = ?", tsID).Delete(&model.TestSuiteCase{})
-	for i := range cases {
-		cases[i].TestSuiteID = tsID
+	return db.DB.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Where("test_suite_id = ?", tsID).Delete(&model.TestSuiteCase{}).Error; err != nil {
+			return err
+		}
+		for i := range cases {
+			cases[i].TestSuiteID = tsID
+		}
+		return tx.Create(&cases).Error
+	})
+}
+
+// ---- Ownership checks ----
+func IsProjectOwnedByUser(projectID, userID uint) bool {
+	var p model.Project
+	if err := db.DB.First(&p, projectID).Error; err != nil {
+		return false
 	}
-	return db.DB.Create(&cases).Error
+	return p.UserID == userID
+}
+
+func IsEnvironmentOwnedByUser(envID, userID uint) bool {
+	var e model.Environment
+	if err := db.DB.First(&e, envID).Error; err != nil {
+		return false
+	}
+	var p model.Project
+	if err := db.DB.First(&p, e.ProjectID).Error; err != nil {
+		return false
+	}
+	return p.UserID == userID
+}
+
+func IsCollectionOwnedByUser(colID, userID uint) bool {
+	var c model.Collection
+	if err := db.DB.First(&c, colID).Error; err != nil {
+		return false
+	}
+	var p model.Project
+	if err := db.DB.First(&p, c.ProjectID).Error; err != nil {
+		return false
+	}
+	return p.UserID == userID
+}
+
+func IsAPIOwnedByUser(apiID, userID uint) bool {
+	var a model.API
+	if err := db.DB.First(&a, apiID).Error; err != nil {
+		return false
+	}
+	var c model.Collection
+	if err := db.DB.First(&c, a.CollectionID).Error; err != nil {
+		return false
+	}
+	var p model.Project
+	if err := db.DB.First(&p, c.ProjectID).Error; err != nil {
+		return false
+	}
+	return p.UserID == userID
+}
+
+func IsTestCaseOwnedByUser(tcID, userID uint) bool {
+	var tc model.TestCase
+	if err := db.DB.First(&tc, tcID).Error; err != nil {
+		return false
+	}
+	var p model.Project
+	if err := db.DB.First(&p, tc.ProjectID).Error; err != nil {
+		return false
+	}
+	return p.UserID == userID
+}
+
+func IsTestSuiteOwnedByUser(tsID, userID uint) bool {
+	var ts model.TestSuite
+	if err := db.DB.First(&ts, tsID).Error; err != nil {
+		return false
+	}
+	var p model.Project
+	if err := db.DB.First(&p, ts.ProjectID).Error; err != nil {
+		return false
+	}
+	return p.UserID == userID
+}
+
+func IsTestRunOwnedByUser(runID, userID uint) bool {
+	var tr model.TestRun
+	if err := db.DB.First(&tr, runID).Error; err != nil {
+		return false
+	}
+	if tr.TargetType == "test_case" {
+		return IsTestCaseOwnedByUser(tr.TargetID, userID)
+	}
+	return IsTestSuiteOwnedByUser(tr.TargetID, userID)
+}
+
+func IsScheduledTaskOwnedByUser(stID, userID uint) bool {
+	var st model.ScheduledTask
+	if err := db.DB.First(&st, stID).Error; err != nil {
+		return false
+	}
+	var p model.Project
+	if err := db.DB.First(&p, st.ProjectID).Error; err != nil {
+		return false
+	}
+	return p.UserID == userID
+}
+
+func IsTestCaseAPIOwnedByUser(tcaID, userID uint) bool {
+	var tca model.TestCaseAPI
+	if err := db.DB.First(&tca, tcaID).Error; err != nil {
+		return false
+	}
+	return IsTestCaseOwnedByUser(tca.TestCaseID, userID)
 }
 
 // ScheduledTask
@@ -147,7 +276,21 @@ func DeleteScheduledTask(id uint) error { return db.DB.Delete(&model.ScheduledTa
 func CreateTestRun(tr *model.TestRun) error { return db.DB.Create(tr).Error }
 func GetTestRunByID(id uint, tr *model.TestRun) error { return db.DB.First(tr, id).Error }
 func UpdateTestRun(tr *model.TestRun) error { return db.DB.Save(tr).Error }
-func GetTestRunDB() *gorm.DB { return db.DB }
+func GetTestRuns(query *gorm.DB) ([]model.TestRun, error) {
+	var runs []model.TestRun
+	err := query.Find(&runs).Error
+	return runs, err
+}
+func GetTestRunsByFilter(targetType, targetID string, runs *[]model.TestRun) error {
+	q := db.DB.Model(&model.TestRun{})
+	if targetType != "" {
+		q = q.Where("target_type = ?", targetType)
+	}
+	if targetID != "" {
+		q = q.Where("target_id = ?", targetID)
+	}
+	return q.Order("id DESC").Limit(50).Find(runs).Error
+}
 
 // TestRunDetail
 func CreateTestRunDetail(d *model.TestRunDetail) error { return db.DB.Create(d).Error }

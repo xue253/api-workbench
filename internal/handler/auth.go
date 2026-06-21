@@ -100,7 +100,11 @@ func Register(c *gin.Context) {
 		return
 	}
 
-	token, _ := generateToken(user.ID)
+	token, err := generateToken(user.ID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "生成令牌失败"})
+		return
+	}
 	c.JSON(http.StatusOK, gin.H{"data": TokenResponse{Token: token, User: user}})
 }
 
@@ -124,7 +128,11 @@ func Login(c *gin.Context) {
 		return
 	}
 
-	token, _ := generateToken(user.ID)
+	token, err := generateToken(user.ID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "生成令牌失败"})
+		return
+	}
 	c.JSON(http.StatusOK, gin.H{"data": TokenResponse{Token: token, User: *user}})
 }
 

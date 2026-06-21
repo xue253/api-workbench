@@ -16,7 +16,7 @@ export default function EnvironmentPage() {
   const [varsLoading, setVarsLoading] = useState(false)
   const [varsChanged, setVarsChanged] = useState(false)
 
-  useEffect(() => { fetchProjects() }, [])
+  useEffect(() => { fetchProjects() }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (selectedProjectId) {
@@ -24,7 +24,7 @@ export default function EnvironmentPage() {
       setCurrentEnv(null)
       setVars([])
     }
-  }, [selectedProjectId])
+  }, [selectedProjectId, fetchByProject, setCurrentEnv])
 
   useEffect(() => {
     if (currentEnv) {

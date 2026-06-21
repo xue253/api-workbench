@@ -92,6 +92,10 @@ export default function DebugPage() {
       message.warning('请输入请求 URL')
       return
     }
+    if (!selectedApi?.id) {
+      message.warning('请先选择一个接口')
+      return
+    }
     setLoading(true)
     setResult(null)
     try {

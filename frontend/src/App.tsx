@@ -35,7 +35,7 @@ function ProjectManager() {
   const [saving, setSaving] = useState(false)
   const [form] = Form.useForm()
 
-  useEffect(() => { fetchProjects() }, [])
+  useEffect(() => { fetchProjects() }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleSave = async () => {
     try {
@@ -121,7 +121,7 @@ function App() {
 
   useEffect(() => {
     if (token) fetchProfile()
-  }, [token])
+  }, [token, fetchProfile])
 
   if (!token || showLogin) {
     return (

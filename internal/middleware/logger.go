@@ -12,12 +12,15 @@ func Logger() gin.HandlerFunc {
 		start := time.Now()
 		c.Next()
 		latency := time.Since(start)
-		log.Printf("[%s] %s %s %d %v",
+		userID, _ := c.Get("user_id")
+		log.Printf("[%s] %s %s %d %v uid=%v query=%s",
 			c.Request.Method,
 			c.Request.URL.Path,
 			c.ClientIP(),
 			c.Writer.Status(),
 			latency,
+			userID,
+			c.Request.URL.RawQuery,
 		)
 	}
 }

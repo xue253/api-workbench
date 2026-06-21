@@ -39,9 +39,8 @@ func ExecuteGRPC(req *GRPCRequest) *GRPCResponse {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(req.TimeoutMs)*time.Millisecond)
 	defer cancel()
 
-	conn, err := grpc.DialContext(ctx, req.Address,
+	conn, err := grpc.NewClient(req.Address,
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
-		grpc.WithBlock(),
 	)
 	if err != nil {
 		resp.Error = fmt.Sprintf("连接失败: %v", err)

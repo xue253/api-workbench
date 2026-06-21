@@ -1,18 +1,23 @@
 package variable
 
 import (
-	"math/rand"
+	"crypto/rand"
 	"regexp"
 	"strconv"
 	"strings"
 	"time"
 )
 
-var varPattern = regexp.MustCompile(`\{\{(\w+)\}\}`)
+var varPattern = regexp.MustCompile(`\{\{(\w+)(?:\(([^)]*)\))?\}\}`)
 
 func Replace(text string, envVars map[string]string, tempVars map[string]string) string {
 	return varPattern.ReplaceAllStringFunc(text, func(match string) string {
-		key := match[2 : len(match)-2]
+		submatch := varPattern.FindStringSubmatch(match)
+		key := submatch[1]
+		args := ""
+		if len(submatch) > 2 {
+			args = submatch[2]
+		}
 		if tempVars != nil {
 			if v, ok := tempVars[key]; ok {
 				return v
@@ -23,8 +28,20 @@ func Replace(text string, envVars map[string]string, tempVars map[string]string)
 				return v
 			}
 		}
+		if args != "" || isDynamicFunc(key) {
+			return GenerateDynamic(key, args)
+		}
 		return match
 	})
+}
+
+func isDynamicFunc(name string) bool {
+	switch name {
+	case "timestamp", "unix", "uuid", "random_string", "random_int",
+		"date", "datetime", "year", "month", "day", "hour", "minute", "second":
+		return true
+	}
+	return false
 }
 
 func ReplaceMap(m map[string]string, envVars map[string]string, tempVars map[string]string) map[string]string {
@@ -52,7 +69,13 @@ func GenerateDynamic(funcName string, args string) string {
 		}
 		return randomString(length)
 	case "random_int":
-		return strconv.Itoa(rand.Intn(10000))
+		var b [4]byte
+		_, _ = rand.Read(b[:])
+		n := int(uint32(b[0])<<24 | uint32(b[1])<<16 | uint32(b[2])<<8 | uint32(b[3]))
+		if n < 0 {
+			n = -n
+		}
+		return strconv.Itoa(n % 10000)
 	case "date":
 		return time.Now().Format("2006-01-02")
 	case "datetime":
@@ -101,8 +124,9 @@ func hexBytes(b []byte) string {
 func randomString(length int) string {
 	const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 	result := make([]byte, length)
+	_, _ = rand.Read(result)
 	for i := range result {
-		result[i] = chars[rand.Intn(len(chars))]
+		result[i] = chars[int(result[i])%len(chars)]
 	}
 	return string(result)
 }

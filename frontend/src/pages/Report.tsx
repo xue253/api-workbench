@@ -38,7 +38,7 @@ export default function ReportPage() {
   const [runDetails, setRunDetails] = useState<RunDetail[]>([])
   const [detailsLoading, setDetailsLoading] = useState(false)
 
-  useEffect(() => { fetchProjects() }, [])
+  useEffect(() => { fetchProjects() }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (selectedProjectId) {

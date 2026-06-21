@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Card, Table, Button, Modal, Form, Input, Space, Popconfirm, message, Select, Tag, Empty } from 'antd'
+import { Card, Table, Button, Modal, Form, Input, InputNumber, Space, Popconfirm, message, Select, Tag, Empty } from 'antd'
 import { PlusOutlined, PlayCircleOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons'
 import { useProjectStore } from '../stores/projectStore'
 import api from '../services/api'
@@ -251,7 +251,7 @@ export default function TestCasePage() {
                 <Select options={[{ value: 'sequential', label: '顺序执行' }, { value: 'parallel', label: '并行执行' }]} />
               </Form.Item>
               <Form.Item name="max_concurrency" label="最大并发数" initialValue={5}>
-                <Input type="number" placeholder="5" />
+                <InputNumber min={1} max={100} placeholder="5" style={{ width: '100%' }} />
               </Form.Item>
             </>
           )}

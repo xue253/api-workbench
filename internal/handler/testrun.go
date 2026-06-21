@@ -94,14 +94,11 @@ func GetTestRuns(c *gin.Context) {
 	targetID := c.Query("target_id")
 
 	var runs []model.TestRun
-	query := repository.GetTestRunDB()
-	if targetType != "" {
-		query = query.Where("target_type = ?", targetType)
+	err := repository.GetTestRunsByFilter(targetType, targetID, &runs)
+	if err != nil {
+		errorResp(c, 500, err.Error())
+		return
 	}
-	if targetID != "" {
-		query = query.Where("target_id = ?", targetID)
-	}
-	query.Order("created_at DESC").Limit(50).Find(&runs)
 
 	success(c, runs)
 }

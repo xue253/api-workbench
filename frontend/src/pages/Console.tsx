@@ -35,7 +35,7 @@ export default function ConsolePage() {
   const [isRunning, setIsRunning] = useState(false)
   const wsRef = useRef<WebSocket | null>(null)
 
-  useEffect(() => { fetchProjects() }, [])
+  useEffect(() => { fetchProjects() }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (selectedProjectId) {

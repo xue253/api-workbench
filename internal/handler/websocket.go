@@ -3,6 +3,7 @@ package handler
 import (
 	"net/http"
 	"strconv"
+	"strings"
 
 	"api-workbench/internal/engine"
 
@@ -12,7 +13,11 @@ import (
 
 var upgrader = websocket.Upgrader{
 	CheckOrigin: func(r *http.Request) bool {
-		return true
+		origin := r.Header.Get("Origin")
+		if origin == "" {
+			return true
+		}
+		return strings.HasPrefix(origin, "http://localhost") || strings.HasPrefix(origin, "https://localhost")
 	},
 }
 

@@ -2,6 +2,7 @@ package handler
 
 import (
 	"fmt"
+	"html"
 	"net/http"
 	"strings"
 
@@ -107,7 +108,7 @@ func generateHTMLReport(run *model.TestRun, details []model.TestRunDetail) strin
 			errMsg = "-"
 		}
 		rows.WriteString(fmt.Sprintf(`<tr style="background:%s"><td>%d</td><td>%s</td><td>%d</td><td>%dms</td><td>%s</td></tr>`,
-			rowColor, i+1, d.Status, d.StatusCode, d.DurationMs, errMsg))
+			rowColor, i+1, html.EscapeString(d.Status), d.StatusCode, d.DurationMs, html.EscapeString(errMsg)))
 	}
 
 	return fmt.Sprintf(`<!DOCTYPE html>

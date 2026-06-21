@@ -21,7 +21,19 @@ func errorResp(c *gin.Context, code int, msg string) {
 
 // ---- Environment ----
 func ListEnvironments(c *gin.Context) {
-	pid, _ := strconv.Atoi(c.Param("pid"))
+	userID, ok := getCurrentUserID(c)
+	if !ok {
+		return
+	}
+	pid, err := strconv.Atoi(c.Param("pid"))
+	if err != nil || pid <= 0 {
+		errorResp(c, 400, "无效的项目ID")
+		return
+	}
+	if !repository.IsProjectOwnedByUser(uint(pid), userID) {
+		errorResp(c, 403, "无权访问此项目")
+		return
+	}
 	var list []model.Environment
 	if err := repository.GetEnvironmentsByProject(uint(pid), &list); err != nil {
 		errorResp(c, 500, err.Error())
@@ -31,7 +43,19 @@ func ListEnvironments(c *gin.Context) {
 }
 
 func CreateEnvironment(c *gin.Context) {
-	pid, _ := strconv.Atoi(c.Param("pid"))
+	userID, ok := getCurrentUserID(c)
+	if !ok {
+		return
+	}
+	pid, err := strconv.Atoi(c.Param("pid"))
+	if err != nil || pid <= 0 {
+		errorResp(c, 400, "无效的项目ID")
+		return
+	}
+	if !repository.IsProjectOwnedByUser(uint(pid), userID) {
+		errorResp(c, 403, "无权操作此项目")
+		return
+	}
 	var e model.Environment
 	if err := c.ShouldBindJSON(&e); err != nil {
 		errorResp(c, 400, err.Error())
@@ -46,7 +70,15 @@ func CreateEnvironment(c *gin.Context) {
 }
 
 func UpdateEnvironment(c *gin.Context) {
+	userID, ok := getCurrentUserID(c)
+	if !ok {
+		return
+	}
 	id, _ := strconv.Atoi(c.Param("id"))
+	if !repository.IsEnvironmentOwnedByUser(uint(id), userID) {
+		errorResp(c, 403, "无权操作此环境")
+		return
+	}
 	var e model.Environment
 	if err := c.ShouldBindJSON(&e); err != nil {
 		errorResp(c, 400, err.Error())
@@ -61,7 +93,15 @@ func UpdateEnvironment(c *gin.Context) {
 }
 
 func DeleteEnvironment(c *gin.Context) {
+	userID, ok := getCurrentUserID(c)
+	if !ok {
+		return
+	}
 	id, _ := strconv.Atoi(c.Param("id"))
+	if !repository.IsEnvironmentOwnedByUser(uint(id), userID) {
+		errorResp(c, 403, "无权操作此环境")
+		return
+	}
 	if err := repository.DeleteEnvironment(uint(id)); err != nil {
 		errorResp(c, 500, err.Error())
 		return
@@ -71,7 +111,15 @@ func DeleteEnvironment(c *gin.Context) {
 
 // ---- Environment Variables ----
 func ListEnvVars(c *gin.Context) {
+	userID, ok := getCurrentUserID(c)
+	if !ok {
+		return
+	}
 	id, _ := strconv.Atoi(c.Param("id"))
+	if !repository.IsEnvironmentOwnedByUser(uint(id), userID) {
+		errorResp(c, 403, "无权操作此环境")
+		return
+	}
 	var list []model.EnvironmentVariable
 	if err := repository.GetEnvVarsByEnvID(uint(id), &list); err != nil {
 		errorResp(c, 500, err.Error())
@@ -81,7 +129,15 @@ func ListEnvVars(c *gin.Context) {
 }
 
 func SaveEnvVars(c *gin.Context) {
+	userID, ok := getCurrentUserID(c)
+	if !ok {
+		return
+	}
 	id, _ := strconv.Atoi(c.Param("id"))
+	if !repository.IsEnvironmentOwnedByUser(uint(id), userID) {
+		errorResp(c, 403, "无权操作此环境")
+		return
+	}
 	var vars []model.EnvironmentVariable
 	if err := c.ShouldBindJSON(&vars); err != nil {
 		errorResp(c, 400, err.Error())
@@ -96,7 +152,19 @@ func SaveEnvVars(c *gin.Context) {
 
 // ---- Collection ----
 func ListCollections(c *gin.Context) {
-	pid, _ := strconv.Atoi(c.Param("pid"))
+	userID, ok := getCurrentUserID(c)
+	if !ok {
+		return
+	}
+	pid, err := strconv.Atoi(c.Param("pid"))
+	if err != nil || pid <= 0 {
+		errorResp(c, 400, "无效的项目ID")
+		return
+	}
+	if !repository.IsProjectOwnedByUser(uint(pid), userID) {
+		errorResp(c, 403, "无权访问此项目")
+		return
+	}
 	var list []model.Collection
 	if err := repository.GetCollectionsByProject(uint(pid), &list); err != nil {
 		errorResp(c, 500, err.Error())
@@ -106,7 +174,19 @@ func ListCollections(c *gin.Context) {
 }
 
 func CreateCollection(c *gin.Context) {
-	pid, _ := strconv.Atoi(c.Param("pid"))
+	userID, ok := getCurrentUserID(c)
+	if !ok {
+		return
+	}
+	pid, err := strconv.Atoi(c.Param("pid"))
+	if err != nil || pid <= 0 {
+		errorResp(c, 400, "无效的项目ID")
+		return
+	}
+	if !repository.IsProjectOwnedByUser(uint(pid), userID) {
+		errorResp(c, 403, "无权操作此项目")
+		return
+	}
 	var col model.Collection
 	if err := c.ShouldBindJSON(&col); err != nil {
 		errorResp(c, 400, err.Error())
@@ -121,7 +201,15 @@ func CreateCollection(c *gin.Context) {
 }
 
 func UpdateCollection(c *gin.Context) {
+	userID, ok := getCurrentUserID(c)
+	if !ok {
+		return
+	}
 	id, _ := strconv.Atoi(c.Param("id"))
+	if !repository.IsCollectionOwnedByUser(uint(id), userID) {
+		errorResp(c, 403, "无权操作此接口分组")
+		return
+	}
 	var col model.Collection
 	if err := c.ShouldBindJSON(&col); err != nil {
 		errorResp(c, 400, err.Error())
@@ -136,7 +224,15 @@ func UpdateCollection(c *gin.Context) {
 }
 
 func DeleteCollection(c *gin.Context) {
+	userID, ok := getCurrentUserID(c)
+	if !ok {
+		return
+	}
 	id, _ := strconv.Atoi(c.Param("id"))
+	if !repository.IsCollectionOwnedByUser(uint(id), userID) {
+		errorResp(c, 403, "无权操作此接口分组")
+		return
+	}
 	if err := repository.DeleteCollection(uint(id)); err != nil {
 		errorResp(c, 500, err.Error())
 		return
@@ -145,7 +241,15 @@ func DeleteCollection(c *gin.Context) {
 }
 
 func MoveCollection(c *gin.Context) {
+	userID, ok := getCurrentUserID(c)
+	if !ok {
+		return
+	}
 	id, _ := strconv.Atoi(c.Param("id"))
+	if !repository.IsCollectionOwnedByUser(uint(id), userID) {
+		errorResp(c, 403, "无权操作此接口分组")
+		return
+	}
 	var body struct {
 		ParentID *uint `json:"parent_id"`
 	}
@@ -162,7 +266,19 @@ func MoveCollection(c *gin.Context) {
 
 // ---- API ----
 func ListAPIsByCollection(c *gin.Context) {
-	id, _ := strconv.Atoi(c.Param("id"))
+	userID, ok := getCurrentUserID(c)
+	if !ok {
+		return
+	}
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil || id <= 0 {
+		errorResp(c, 400, "无效的分组ID")
+		return
+	}
+	if !repository.IsCollectionOwnedByUser(uint(id), userID) {
+		errorResp(c, 403, "无权访问此分组")
+		return
+	}
 	var list []model.API
 	if err := repository.GetAPIsByCollection(uint(id), &list); err != nil {
 		errorResp(c, 500, err.Error())
@@ -172,7 +288,19 @@ func ListAPIsByCollection(c *gin.Context) {
 }
 
 func CreateAPIByCollection(c *gin.Context) {
-	id, _ := strconv.Atoi(c.Param("id"))
+	userID, ok := getCurrentUserID(c)
+	if !ok {
+		return
+	}
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil || id <= 0 {
+		errorResp(c, 400, "无效的分组ID")
+		return
+	}
+	if !repository.IsCollectionOwnedByUser(uint(id), userID) {
+		errorResp(c, 403, "无权操作此分组")
+		return
+	}
 	var a model.API
 	if err := c.ShouldBindJSON(&a); err != nil {
 		errorResp(c, 400, err.Error())
@@ -187,7 +315,15 @@ func CreateAPIByCollection(c *gin.Context) {
 }
 
 func GetAPI(c *gin.Context) {
+	userID, ok := getCurrentUserID(c)
+	if !ok {
+		return
+	}
 	id, _ := strconv.Atoi(c.Param("id"))
+	if !repository.IsAPIOwnedByUser(uint(id), userID) {
+		errorResp(c, 403, "无权访问此接口")
+		return
+	}
 	var a model.API
 	if err := repository.GetAPIByID(uint(id), &a); err != nil {
 		errorResp(c, 404, "not found")
@@ -197,7 +333,15 @@ func GetAPI(c *gin.Context) {
 }
 
 func UpdateAPI(c *gin.Context) {
+	userID, ok := getCurrentUserID(c)
+	if !ok {
+		return
+	}
 	id, _ := strconv.Atoi(c.Param("id"))
+	if !repository.IsAPIOwnedByUser(uint(id), userID) {
+		errorResp(c, 403, "无权操作此接口")
+		return
+	}
 	var a model.API
 	if err := c.ShouldBindJSON(&a); err != nil {
 		errorResp(c, 400, err.Error())
@@ -212,7 +356,15 @@ func UpdateAPI(c *gin.Context) {
 }
 
 func DeleteAPI(c *gin.Context) {
+	userID, ok := getCurrentUserID(c)
+	if !ok {
+		return
+	}
 	id, _ := strconv.Atoi(c.Param("id"))
+	if !repository.IsAPIOwnedByUser(uint(id), userID) {
+		errorResp(c, 403, "无权操作此接口")
+		return
+	}
 	if err := repository.DeleteAPI(uint(id)); err != nil {
 		errorResp(c, 500, err.Error())
 		return
@@ -222,7 +374,15 @@ func DeleteAPI(c *gin.Context) {
 
 // ---- Assertions ----
 func ListAssertions(c *gin.Context) {
+	userID, ok := getCurrentUserID(c)
+	if !ok {
+		return
+	}
 	aid, _ := strconv.Atoi(c.Param("id"))
+	if !repository.IsAPIOwnedByUser(uint(aid), userID) {
+		errorResp(c, 403, "无权访问此接口")
+		return
+	}
 	var list []model.Assertion
 	if err := repository.GetAssertionsByAPIID(uint(aid), &list); err != nil {
 		errorResp(c, 500, err.Error())
@@ -232,7 +392,15 @@ func ListAssertions(c *gin.Context) {
 }
 
 func SaveAssertions(c *gin.Context) {
+	userID, ok := getCurrentUserID(c)
+	if !ok {
+		return
+	}
 	aid, _ := strconv.Atoi(c.Param("id"))
+	if !repository.IsAPIOwnedByUser(uint(aid), userID) {
+		errorResp(c, 403, "无权操作此接口")
+		return
+	}
 	var assertions []model.Assertion
 	if err := c.ShouldBindJSON(&assertions); err != nil {
 		errorResp(c, 400, err.Error())
@@ -247,7 +415,19 @@ func SaveAssertions(c *gin.Context) {
 
 // ---- TestCase ----
 func ListTestCases(c *gin.Context) {
-	pid, _ := strconv.Atoi(c.Param("pid"))
+	userID, ok := getCurrentUserID(c)
+	if !ok {
+		return
+	}
+	pid, err := strconv.Atoi(c.Param("pid"))
+	if err != nil || pid <= 0 {
+		errorResp(c, 400, "无效的项目ID")
+		return
+	}
+	if !repository.IsProjectOwnedByUser(uint(pid), userID) {
+		errorResp(c, 403, "无权访问此项目")
+		return
+	}
 	var list []model.TestCase
 	if err := repository.GetTestCasesByProject(uint(pid), &list); err != nil {
 		errorResp(c, 500, err.Error())
@@ -257,7 +437,19 @@ func ListTestCases(c *gin.Context) {
 }
 
 func CreateTestCase(c *gin.Context) {
-	pid, _ := strconv.Atoi(c.Param("pid"))
+	userID, ok := getCurrentUserID(c)
+	if !ok {
+		return
+	}
+	pid, err := strconv.Atoi(c.Param("pid"))
+	if err != nil || pid <= 0 {
+		errorResp(c, 400, "无效的项目ID")
+		return
+	}
+	if !repository.IsProjectOwnedByUser(uint(pid), userID) {
+		errorResp(c, 403, "无权操作此项目")
+		return
+	}
 	var tc model.TestCase
 	if err := c.ShouldBindJSON(&tc); err != nil {
 		errorResp(c, 400, err.Error())
@@ -272,7 +464,15 @@ func CreateTestCase(c *gin.Context) {
 }
 
 func UpdateTestCase(c *gin.Context) {
+	userID, ok := getCurrentUserID(c)
+	if !ok {
+		return
+	}
 	id, _ := strconv.Atoi(c.Param("id"))
+	if !repository.IsTestCaseOwnedByUser(uint(id), userID) {
+		errorResp(c, 403, "无权操作此测试用例")
+		return
+	}
 	var tc model.TestCase
 	if err := c.ShouldBindJSON(&tc); err != nil {
 		errorResp(c, 400, err.Error())
@@ -287,7 +487,15 @@ func UpdateTestCase(c *gin.Context) {
 }
 
 func DeleteTestCase(c *gin.Context) {
+	userID, ok := getCurrentUserID(c)
+	if !ok {
+		return
+	}
 	id, _ := strconv.Atoi(c.Param("id"))
+	if !repository.IsTestCaseOwnedByUser(uint(id), userID) {
+		errorResp(c, 403, "无权操作此测试用例")
+		return
+	}
 	if err := repository.DeleteTestCase(uint(id)); err != nil {
 		errorResp(c, 500, err.Error())
 		return
@@ -296,7 +504,15 @@ func DeleteTestCase(c *gin.Context) {
 }
 
 func SaveTestCaseAPIs(c *gin.Context) {
+	userID, ok := getCurrentUserID(c)
+	if !ok {
+		return
+	}
 	id, _ := strconv.Atoi(c.Param("id"))
+	if !repository.IsTestCaseOwnedByUser(uint(id), userID) {
+		errorResp(c, 403, "无权操作此测试用例")
+		return
+	}
 	var apis []model.TestCaseAPI
 	if err := c.ShouldBindJSON(&apis); err != nil {
 		errorResp(c, 400, err.Error())
@@ -311,7 +527,15 @@ func SaveTestCaseAPIs(c *gin.Context) {
 
 // ---- TestDataSet ----
 func ListDataSets(c *gin.Context) {
+	userID, ok := getCurrentUserID(c)
+	if !ok {
+		return
+	}
 	tcaID, _ := strconv.Atoi(c.Param("id"))
+	if !repository.IsTestCaseAPIOwnedByUser(uint(tcaID), userID) {
+		errorResp(c, 403, "无权访问此测试接口")
+		return
+	}
 	var list []model.TestDataSet
 	if err := repository.GetTestDataSets(uint(tcaID), &list); err != nil {
 		errorResp(c, 500, err.Error())
@@ -321,7 +545,15 @@ func ListDataSets(c *gin.Context) {
 }
 
 func SaveDataSets(c *gin.Context) {
+	userID, ok := getCurrentUserID(c)
+	if !ok {
+		return
+	}
 	tcaID, _ := strconv.Atoi(c.Param("id"))
+	if !repository.IsTestCaseAPIOwnedByUser(uint(tcaID), userID) {
+		errorResp(c, 403, "无权操作此测试接口")
+		return
+	}
 	var datasets []model.TestDataSet
 	if err := c.ShouldBindJSON(&datasets); err != nil {
 		errorResp(c, 400, err.Error())
@@ -336,7 +568,19 @@ func SaveDataSets(c *gin.Context) {
 
 // ---- TestSuite ----
 func ListTestSuites(c *gin.Context) {
-	pid, _ := strconv.Atoi(c.Param("pid"))
+	userID, ok := getCurrentUserID(c)
+	if !ok {
+		return
+	}
+	pid, err := strconv.Atoi(c.Param("pid"))
+	if err != nil || pid <= 0 {
+		errorResp(c, 400, "无效的项目ID")
+		return
+	}
+	if !repository.IsProjectOwnedByUser(uint(pid), userID) {
+		errorResp(c, 403, "无权访问此项目")
+		return
+	}
 	var list []model.TestSuite
 	if err := repository.GetTestSuitesByProject(uint(pid), &list); err != nil {
 		errorResp(c, 500, err.Error())
@@ -346,7 +590,19 @@ func ListTestSuites(c *gin.Context) {
 }
 
 func CreateTestSuite(c *gin.Context) {
-	pid, _ := strconv.Atoi(c.Param("pid"))
+	userID, ok := getCurrentUserID(c)
+	if !ok {
+		return
+	}
+	pid, err := strconv.Atoi(c.Param("pid"))
+	if err != nil || pid <= 0 {
+		errorResp(c, 400, "无效的项目ID")
+		return
+	}
+	if !repository.IsProjectOwnedByUser(uint(pid), userID) {
+		errorResp(c, 403, "无权操作此项目")
+		return
+	}
 	var ts model.TestSuite
 	if err := c.ShouldBindJSON(&ts); err != nil {
 		errorResp(c, 400, err.Error())
@@ -361,7 +617,15 @@ func CreateTestSuite(c *gin.Context) {
 }
 
 func UpdateTestSuite(c *gin.Context) {
+	userID, ok := getCurrentUserID(c)
+	if !ok {
+		return
+	}
 	id, _ := strconv.Atoi(c.Param("id"))
+	if !repository.IsTestSuiteOwnedByUser(uint(id), userID) {
+		errorResp(c, 403, "无权操作此测试套件")
+		return
+	}
 	var ts model.TestSuite
 	if err := c.ShouldBindJSON(&ts); err != nil {
 		errorResp(c, 400, err.Error())
@@ -376,7 +640,15 @@ func UpdateTestSuite(c *gin.Context) {
 }
 
 func DeleteTestSuite(c *gin.Context) {
+	userID, ok := getCurrentUserID(c)
+	if !ok {
+		return
+	}
 	id, _ := strconv.Atoi(c.Param("id"))
+	if !repository.IsTestSuiteOwnedByUser(uint(id), userID) {
+		errorResp(c, 403, "无权操作此测试套件")
+		return
+	}
 	if err := repository.DeleteTestSuite(uint(id)); err != nil {
 		errorResp(c, 500, err.Error())
 		return
@@ -385,7 +657,15 @@ func DeleteTestSuite(c *gin.Context) {
 }
 
 func SaveTestSuiteCases(c *gin.Context) {
+	userID, ok := getCurrentUserID(c)
+	if !ok {
+		return
+	}
 	id, _ := strconv.Atoi(c.Param("id"))
+	if !repository.IsTestSuiteOwnedByUser(uint(id), userID) {
+		errorResp(c, 403, "无权操作此测试套件")
+		return
+	}
 	var cases []model.TestSuiteCase
 	if err := c.ShouldBindJSON(&cases); err != nil {
 		errorResp(c, 400, err.Error())
@@ -400,7 +680,19 @@ func SaveTestSuiteCases(c *gin.Context) {
 
 // ---- ScheduledTask ----
 func ListScheduledTasks(c *gin.Context) {
-	pid, _ := strconv.Atoi(c.Param("pid"))
+	userID, ok := getCurrentUserID(c)
+	if !ok {
+		return
+	}
+	pid, err := strconv.Atoi(c.Param("pid"))
+	if err != nil || pid <= 0 {
+		errorResp(c, 400, "无效的项目ID")
+		return
+	}
+	if !repository.IsProjectOwnedByUser(uint(pid), userID) {
+		errorResp(c, 403, "无权访问此项目")
+		return
+	}
 	var list []model.ScheduledTask
 	if err := repository.GetScheduledTasksByProject(uint(pid), &list); err != nil {
 		errorResp(c, 500, err.Error())
@@ -410,7 +702,19 @@ func ListScheduledTasks(c *gin.Context) {
 }
 
 func CreateScheduledTask(c *gin.Context) {
-	pid, _ := strconv.Atoi(c.Param("pid"))
+	userID, ok := getCurrentUserID(c)
+	if !ok {
+		return
+	}
+	pid, err := strconv.Atoi(c.Param("pid"))
+	if err != nil || pid <= 0 {
+		errorResp(c, 400, "无效的项目ID")
+		return
+	}
+	if !repository.IsProjectOwnedByUser(uint(pid), userID) {
+		errorResp(c, 403, "无权操作此项目")
+		return
+	}
 	var st model.ScheduledTask
 	if err := c.ShouldBindJSON(&st); err != nil {
 		errorResp(c, 400, err.Error())
@@ -426,7 +730,15 @@ func CreateScheduledTask(c *gin.Context) {
 }
 
 func UpdateScheduledTask(c *gin.Context) {
+	userID, ok := getCurrentUserID(c)
+	if !ok {
+		return
+	}
 	id, _ := strconv.Atoi(c.Param("id"))
+	if !repository.IsScheduledTaskOwnedByUser(uint(id), userID) {
+		errorResp(c, 403, "无权操作此调度任务")
+		return
+	}
 	var st model.ScheduledTask
 	if err := c.ShouldBindJSON(&st); err != nil {
 		errorResp(c, 400, err.Error())
@@ -442,7 +754,15 @@ func UpdateScheduledTask(c *gin.Context) {
 }
 
 func DeleteScheduledTask(c *gin.Context) {
+	userID, ok := getCurrentUserID(c)
+	if !ok {
+		return
+	}
 	id, _ := strconv.Atoi(c.Param("id"))
+	if !repository.IsScheduledTaskOwnedByUser(uint(id), userID) {
+		errorResp(c, 403, "无权操作此调度任务")
+		return
+	}
 	scheduler.RemoveTask(uint(id))
 	if err := repository.DeleteScheduledTask(uint(id)); err != nil {
 		errorResp(c, 500, err.Error())

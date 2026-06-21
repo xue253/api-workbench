@@ -42,7 +42,8 @@ func UnregisterWSClient(runID uint, conn *websocket.Conn) {
 
 func broadcastToRun(runID uint, msg WSMessage) {
 	wsMu.RLock()
-	clients := wsClients[runID]
+	clients := make([]*websocket.Conn, len(wsClients[runID]))
+	copy(clients, wsClients[runID])
 	wsMu.RUnlock()
 
 	data, _ := json.Marshal(msg)

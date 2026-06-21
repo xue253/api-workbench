@@ -18,7 +18,7 @@ export default function SettingsPage() {
         email: user.email,
       })
     }
-  }, [user])
+  }, [user, profileForm])
 
   const handleSaveProfile = async () => {
     try {

@@ -4,7 +4,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 )
@@ -33,6 +35,11 @@ func ExecuteHTTP(req *DebugRequest) *DebugResponse {
 
 	if req.TimeoutMs <= 0 {
 		req.TimeoutMs = 30000
+	}
+
+	if err := validateURL(req.URL); err != nil {
+		resp.Error = err.Error()
+		return resp
 	}
 
 	client := &http.Client{
@@ -89,7 +96,7 @@ func ExecuteHTTP(req *DebugRequest) *DebugResponse {
 		}
 	}
 
-	bodyBytes, err := io.ReadAll(httpResp.Body)
+	bodyBytes, err := io.ReadAll(io.LimitReader(httpResp.Body, 10<<20))
 	if err != nil {
 		resp.Error = fmt.Sprintf("读取响应失败: %v", err)
 		return resp
@@ -97,6 +104,72 @@ func ExecuteHTTP(req *DebugRequest) *DebugResponse {
 	resp.Body = string(bodyBytes)
 
 	return resp
+}
+
+func validateURL(rawURL string) error {
+	u, err := url.Parse(rawURL)
+	if err != nil {
+		return fmt.Errorf("无效的 URL: %v", err)
+	}
+	host := u.Hostname()
+	if host == "" {
+		return fmt.Errorf("URL 缺少主机名")
+	}
+	addrs, err := net.LookupHost(host)
+	if err != nil {
+		return fmt.Errorf("无法解析主机: %v", err)
+	}
+	for _, addr := range addrs {
+		ip := net.ParseIP(addr)
+		if ip == nil {
+			continue
+		}
+		if isPrivateIP(ip) {
+			return fmt.Errorf("禁止访问内网地址: %s", addr)
+		}
+	}
+	return nil
+}
+
+func isPrivateIP(ip net.IP) bool {
+	privateRanges := []struct {
+		start net.IP
+		end   net.IP
+	}{
+		{net.ParseIP("10.0.0.0"), net.ParseIP("10.255.255.255")},
+		{net.ParseIP("172.16.0.0"), net.ParseIP("172.31.255.255")},
+		{net.ParseIP("192.168.0.0"), net.ParseIP("192.168.255.255")},
+		{net.ParseIP("127.0.0.0"), net.ParseIP("127.255.255.255")},
+		{net.ParseIP("169.254.0.0"), net.ParseIP("169.254.255.255")},
+		{net.ParseIP("::1"), net.ParseIP("::1")},
+	}
+	for _, r := range privateRanges {
+		if bytesInRange(ip, r.start, r.end) {
+			return true
+		}
+	}
+	return ip.IsLoopback() || ip.IsLinkLocalUnicast() || ip.IsLinkLocalMulticast()
+}
+
+func bytesInRange(ip, start, end net.IP) bool {
+	ip4 := ip.To4()
+	start4 := start.To4()
+	end4 := end.To4()
+	if ip4 == nil || start4 == nil || end4 == nil {
+		return false
+	}
+	for i := 0; i < 4; i++ {
+		if ip4[i] < start4[i] {
+			return false
+		}
+		if ip4[i] > end4[i] {
+			return false
+		}
+		if ip4[i] > start4[i] && ip4[i] < end4[i] {
+			return true
+		}
+	}
+	return true
 }
 
 // FormatJSON 尝试格式化 JSON 字符串

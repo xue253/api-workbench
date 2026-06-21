@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Card, Table, Button, Modal, Form, Input, Select, Switch, Space, Popconfirm, message, Tag } from 'antd'
+import { Card, Table, Button, Modal, Form, Input, InputNumber, Select, Switch, Space, Popconfirm, message, Tag } from 'antd'
 import { PlusOutlined, EditOutlined, DeleteOutlined, ClockCircleOutlined } from '@ant-design/icons'
 import { useProjectStore } from '../stores/projectStore'
 import api from '../services/api'
@@ -162,7 +162,7 @@ export default function SchedulePage() {
             <Select options={[{ value: 'test_case', label: '测试用例' }, { value: 'test_suite', label: '测试套件' }]} />
           </Form.Item>
           <Form.Item name="target_id" label="任务 ID" rules={[{ required: true }]}>
-            <Input type="number" placeholder="输入测试用例或套件的 ID" />
+            <InputNumber min={1} placeholder="输入测试用例或套件的 ID" style={{ width: '100%' }} />
           </Form.Item>
           <Form.Item name="cron_expr" label="Cron 表达式" rules={[{ required: true }]}>
             <Input placeholder="* * * * *" />
@@ -174,7 +174,7 @@ export default function SchedulePage() {
             <Switch />
           </Form.Item>
           <Form.Item name="environment_id" label="环境 ID">
-            <Input type="number" placeholder="可选" />
+            <InputNumber min={0} placeholder="可选" style={{ width: '100%' }} />
           </Form.Item>
         </Form>
       </Modal>
