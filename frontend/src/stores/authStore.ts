@@ -55,7 +55,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       const res: any = await api.get('/user/profile')
       set({ user: res.data })
     } catch {
-      get().logout()
+      // 保留 token，允许重试，不强制登出
     }
   },
 

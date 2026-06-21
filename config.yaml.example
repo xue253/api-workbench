@@ -10,6 +10,10 @@ database:
   dbname: api_workbench
   charset: utf8mb4
 
+jwt:
+  secret: "YOUR_JWT_SECRET"
+  expire_hour: 168
+
 log:
   level: info
   file: logs/app.log

@@ -4,14 +4,16 @@ import (
 	"net/http"
 	"strings"
 
+	"api-workbench/internal/config"
+
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
 )
 
-var JWTSecret = []byte("api-workbench-secret-key-2026")
-
 func Auth() gin.HandlerFunc {
 	return func(c *gin.Context) {
+		secret := []byte(config.AppConfig.JWT.Secret)
+
 		authHeader := c.GetHeader("Authorization")
 		if authHeader == "" {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "请先登录"})
@@ -27,7 +29,7 @@ func Auth() gin.HandlerFunc {
 		}
 
 		token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
-			return JWTSecret, nil
+			return secret, nil
 		})
 
 		if err != nil || !token.Valid {
@@ -43,8 +45,13 @@ func Auth() gin.HandlerFunc {
 			return
 		}
 
-		userID := uint(claims["user_id"].(float64))
-		c.Set("user_id", userID)
+		userIDFloat, ok := claims["user_id"].(float64)
+		if !ok {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Token 无效"})
+			c.Abort()
+			return
+		}
+		c.Set("user_id", uint(userIDFloat))
 		c.Next()
 	}
 }

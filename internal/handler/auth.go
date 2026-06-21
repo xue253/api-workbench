@@ -5,6 +5,7 @@ import (
 	"strconv"
 	"time"
 
+	"api-workbench/internal/config"
 	"api-workbench/internal/model"
 	"api-workbench/internal/repository"
 
@@ -12,8 +13,6 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 	"golang.org/x/crypto/bcrypt"
 )
-
-var jwtSecret = []byte("api-workbench-secret-key-2026")
 
 type LoginRequest struct {
 	Username string `json:"username" binding:"required"`
@@ -27,8 +26,8 @@ type RegisterRequest struct {
 }
 
 type TokenResponse struct {
-	Token string      `json:"token"`
-	User  model.User  `json:"user"`
+	Token string     `json:"token"`
+	User  model.User `json:"user"`
 }
 
 func hashPassword(pwd string) (string, error) {
@@ -42,11 +41,38 @@ func checkPassword(hashed, pwd string) bool {
 }
 
 func generateToken(userID uint) (string, error) {
+	expireHour := config.AppConfig.JWT.ExpireHour
+	if expireHour <= 0 {
+		expireHour = 168
+	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"user_id": userID,
-		"exp":     time.Now().Add(7 * 24 * time.Hour).Unix(),
+		"exp":     time.Now().Add(time.Duration(expireHour) * time.Hour).Unix(),
 	})
-	return token.SignedString(jwtSecret)
+	return token.SignedString([]byte(config.AppConfig.JWT.Secret))
+}
+
+func getUintParam(c *gin.Context, key string) (uint, bool) {
+	id, err := strconv.Atoi(c.Param(key))
+	if err != nil || id <= 0 {
+		errorResp(c, 400, "无效的ID")
+		return 0, false
+	}
+	return uint(id), true
+}
+
+func getCurrentUserID(c *gin.Context) (uint, bool) {
+	uid, exists := c.Get("user_id")
+	if !exists {
+		errorResp(c, 401, "未登录")
+		return 0, false
+	}
+	userID, ok := uid.(uint)
+	if !ok {
+		errorResp(c, 500, "用户信息异常")
+		return 0, false
+	}
+	return userID, true
 }
 
 // ---- Register ----
@@ -104,9 +130,12 @@ func Login(c *gin.Context) {
 
 // ---- Get Profile ----
 func GetProfile(c *gin.Context) {
-	uid, _ := c.Get("user_id")
+	userID, ok := getCurrentUserID(c)
+	if !ok {
+		return
+	}
 	user := &model.User{}
-	err := repository.GetUserByID(uid.(uint), user)
+	err := repository.GetUserByID(userID, user)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "用户不存在"})
 		return
@@ -116,7 +145,10 @@ func GetProfile(c *gin.Context) {
 
 // ---- Update Profile ----
 func UpdateProfile(c *gin.Context) {
-	uid, _ := c.Get("user_id")
+	userID, ok := getCurrentUserID(c)
+	if !ok {
+		return
+	}
 	var updates struct {
 		Email  string `json:"email"`
 		Avatar string `json:"avatar"`
@@ -126,7 +158,7 @@ func UpdateProfile(c *gin.Context) {
 		return
 	}
 	user := &model.User{}
-	err := repository.GetUserByID(uid.(uint), user)
+	err := repository.GetUserByID(userID, user)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "用户不存在"})
 		return
@@ -139,7 +171,10 @@ func UpdateProfile(c *gin.Context) {
 
 // ---- Change Password ----
 func ChangePassword(c *gin.Context) {
-	uid, _ := c.Get("user_id")
+	userID, ok := getCurrentUserID(c)
+	if !ok {
+		return
+	}
 	var req struct {
 		OldPassword string `json:"old_password" binding:"required"`
 		NewPassword string `json:"new_password" binding:"required,min=6"`
@@ -149,7 +184,7 @@ func ChangePassword(c *gin.Context) {
 		return
 	}
 	user := &model.User{}
-	err := repository.GetUserByID(uid.(uint), user)
+	err := repository.GetUserByID(userID, user)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "用户不存在"})
 		return
@@ -166,33 +201,29 @@ func ChangePassword(c *gin.Context) {
 
 // ---- Delete Account ----
 func DeleteAccount(c *gin.Context) {
-	uid, _ := c.Get("user_id")
-	if err := repository.DeleteUser(uid.(uint)); err != nil {
+	userID, ok := getCurrentUserID(c)
+	if !ok {
+		return
+	}
+	if err := repository.DeleteUser(userID); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "删除失败"})
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"message": "账号已删除"})
 }
 
-// ---- List Users (admin) ----
-func ListUsers(c *gin.Context) {
-	var users []model.User
-	if err := repository.GetUsers(&users); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-	c.JSON(http.StatusOK, gin.H{"data": users})
-}
-
 // ---- Project (需要 user_id) ----
 func CreateProject(c *gin.Context) {
-	uid, _ := c.Get("user_id")
+	userID, ok := getCurrentUserID(c)
+	if !ok {
+		return
+	}
 	var p model.Project
 	if err := c.ShouldBindJSON(&p); err != nil {
 		errorResp(c, 400, err.Error())
 		return
 	}
-	p.UserID = uid.(uint)
+	p.UserID = userID
 	if err := repository.CreateProject(&p); err != nil {
 		errorResp(c, 500, err.Error())
 		return
@@ -201,9 +232,12 @@ func CreateProject(c *gin.Context) {
 }
 
 func ListProjects(c *gin.Context) {
-	uid, _ := c.Get("user_id")
+	userID, ok := getCurrentUserID(c)
+	if !ok {
+		return
+	}
 	var list []model.Project
-	if err := repository.GetProjectsByUser(uid.(uint), &list); err != nil {
+	if err := repository.GetProjectsByUser(userID, &list); err != nil {
 		errorResp(c, 500, err.Error())
 		return
 	}
@@ -211,13 +245,29 @@ func ListProjects(c *gin.Context) {
 }
 
 func UpdateProject(c *gin.Context) {
-	id, _ := strconv.Atoi(c.Param("id"))
+	userID, ok := getCurrentUserID(c)
+	if !ok {
+		return
+	}
+	id, ok := getUintParam(c, "id")
+	if !ok {
+		return
+	}
+	var existing model.Project
+	if err := repository.GetProjectByID(id, &existing); err != nil {
+		errorResp(c, 404, "项目不存在")
+		return
+	}
+	if existing.UserID != userID {
+		errorResp(c, 403, "无权操作此项目")
+		return
+	}
 	var p model.Project
 	if err := c.ShouldBindJSON(&p); err != nil {
 		errorResp(c, 400, err.Error())
 		return
 	}
-	p.ID = uint(id)
+	p.ID = id
 	if err := repository.UpdateProject(&p); err != nil {
 		errorResp(c, 500, err.Error())
 		return
@@ -226,8 +276,24 @@ func UpdateProject(c *gin.Context) {
 }
 
 func DeleteProject(c *gin.Context) {
-	id, _ := strconv.Atoi(c.Param("id"))
-	if err := repository.DeleteProject(uint(id)); err != nil {
+	userID, ok := getCurrentUserID(c)
+	if !ok {
+		return
+	}
+	id, ok := getUintParam(c, "id")
+	if !ok {
+		return
+	}
+	var existing model.Project
+	if err := repository.GetProjectByID(id, &existing); err != nil {
+		errorResp(c, 404, "项目不存在")
+		return
+	}
+	if existing.UserID != userID {
+		errorResp(c, 403, "无权操作此项目")
+		return
+	}
+	if err := repository.DeleteProject(id); err != nil {
 		errorResp(c, 500, err.Error())
 		return
 	}
