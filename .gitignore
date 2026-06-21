@@ -9,3 +9,5 @@ venv/
 go.sum
 logs/
 config.yaml
+prd.md
+process.md
