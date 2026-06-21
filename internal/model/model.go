@@ -2,8 +2,19 @@ package model
 
 import "time"
 
+type User struct {
+	ID        uint      `json:"id" gorm:"primaryKey"`
+	Username  string    `json:"username" gorm:"size:50;uniqueIndex;not null"`
+	Password  string    `json:"-" gorm:"size:255;not null"`
+	Email     string    `json:"email" gorm:"size:100"`
+	Avatar    string    `json:"avatar" gorm:"size:500"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+}
+
 type Project struct {
 	ID          uint      `json:"id" gorm:"primaryKey"`
+	UserID      uint      `json:"user_id" gorm:"index"`
 	Name        string    `json:"name" gorm:"size:100;not null"`
 	Description string    `json:"description" gorm:"size:500"`
 	CreatedAt   time.Time `json:"created_at"`

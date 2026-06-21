@@ -18,53 +18,6 @@ func errorResp(c *gin.Context, code int, msg string) {
 	c.JSON(code, gin.H{"error": msg})
 }
 
-// ---- Project ----
-func ListProjects(c *gin.Context) {
-	var list []model.Project
-	if err := repository.GetProjects(&list); err != nil {
-		errorResp(c, 500, err.Error())
-		return
-	}
-	success(c, list)
-}
-
-func CreateProject(c *gin.Context) {
-	var p model.Project
-	if err := c.ShouldBindJSON(&p); err != nil {
-		errorResp(c, 400, err.Error())
-		return
-	}
-	if err := repository.CreateProject(&p); err != nil {
-		errorResp(c, 500, err.Error())
-		return
-	}
-	success(c, p)
-}
-
-func UpdateProject(c *gin.Context) {
-	id, _ := strconv.Atoi(c.Param("id"))
-	var p model.Project
-	if err := c.ShouldBindJSON(&p); err != nil {
-		errorResp(c, 400, err.Error())
-		return
-	}
-	p.ID = uint(id)
-	if err := repository.UpdateProject(&p); err != nil {
-		errorResp(c, 500, err.Error())
-		return
-	}
-	success(c, p)
-}
-
-func DeleteProject(c *gin.Context) {
-	id, _ := strconv.Atoi(c.Param("id"))
-	if err := repository.DeleteProject(uint(id)); err != nil {
-		errorResp(c, 500, err.Error())
-		return
-	}
-	success(c, nil)
-}
-
 // ---- Environment ----
 func ListEnvironments(c *gin.Context) {
 	pid, _ := strconv.Atoi(c.Param("pid"))
@@ -117,9 +70,9 @@ func DeleteEnvironment(c *gin.Context) {
 
 // ---- Environment Variables ----
 func ListEnvVars(c *gin.Context) {
-	eid, _ := strconv.Atoi(c.Param("eid"))
+	id, _ := strconv.Atoi(c.Param("id"))
 	var list []model.EnvironmentVariable
-	if err := repository.GetEnvVarsByEnvID(uint(eid), &list); err != nil {
+	if err := repository.GetEnvVarsByEnvID(uint(id), &list); err != nil {
 		errorResp(c, 500, err.Error())
 		return
 	}
@@ -127,13 +80,13 @@ func ListEnvVars(c *gin.Context) {
 }
 
 func SaveEnvVars(c *gin.Context) {
-	eid, _ := strconv.Atoi(c.Param("eid"))
+	id, _ := strconv.Atoi(c.Param("id"))
 	var vars []model.EnvironmentVariable
 	if err := c.ShouldBindJSON(&vars); err != nil {
 		errorResp(c, 400, err.Error())
 		return
 	}
-	if err := repository.SaveEnvVars(uint(eid), vars); err != nil {
+	if err := repository.SaveEnvVars(uint(id), vars); err != nil {
 		errorResp(c, 500, err.Error())
 		return
 	}
@@ -207,24 +160,24 @@ func MoveCollection(c *gin.Context) {
 }
 
 // ---- API ----
-func ListAPIs(c *gin.Context) {
-	cid, _ := strconv.Atoi(c.Param("cid"))
+func ListAPIsByCollection(c *gin.Context) {
+	id, _ := strconv.Atoi(c.Param("id"))
 	var list []model.API
-	if err := repository.GetAPIsByCollection(uint(cid), &list); err != nil {
+	if err := repository.GetAPIsByCollection(uint(id), &list); err != nil {
 		errorResp(c, 500, err.Error())
 		return
 	}
 	success(c, list)
 }
 
-func CreateAPI(c *gin.Context) {
-	cid, _ := strconv.Atoi(c.Param("cid"))
+func CreateAPIByCollection(c *gin.Context) {
+	id, _ := strconv.Atoi(c.Param("id"))
 	var a model.API
 	if err := c.ShouldBindJSON(&a); err != nil {
 		errorResp(c, 400, err.Error())
 		return
 	}
-	a.CollectionID = uint(cid)
+	a.CollectionID = uint(id)
 	if err := repository.CreateAPI(&a); err != nil {
 		errorResp(c, 500, err.Error())
 		return

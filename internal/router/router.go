@@ -2,6 +2,7 @@ package router
 
 import (
 	"api-workbench/internal/handler"
+	"api-workbench/internal/middleware"
 
 	"github.com/gin-gonic/gin"
 )
@@ -11,59 +12,92 @@ func Setup(r *gin.Engine) {
 
 	api.GET("/health", handler.Health)
 
-	// Project
-	api.GET("/projects", handler.ListProjects)
-	api.POST("/projects", handler.CreateProject)
-	api.PUT("/projects/:id", handler.UpdateProject)
-	api.DELETE("/projects/:id", handler.DeleteProject)
+	// Auth (public)
+	api.POST("/auth/register", handler.Register)
+	api.POST("/auth/login", handler.Login)
 
-	// Environment
-	api.GET("/projects/:pid/environments", handler.ListEnvironments)
-	api.POST("/projects/:pid/environments", handler.CreateEnvironment)
-	api.PUT("/environments/:id", handler.UpdateEnvironment)
-	api.DELETE("/environments/:id", handler.DeleteEnvironment)
+	// Protected routes
+	auth := api.Group("")
+	auth.Use(middleware.Auth())
+	{
+		// User
+		auth.GET("/user/profile", handler.GetProfile)
+		auth.PUT("/user/profile", handler.UpdateProfile)
+		auth.PUT("/user/password", handler.ChangePassword)
+		auth.DELETE("/user/account", handler.DeleteAccount)
+		auth.GET("/users", handler.ListUsers)
 
-	// Environment Variables
-	api.GET("/environments/:eid/variables", handler.ListEnvVars)
-	api.PUT("/environments/:eid/variables", handler.SaveEnvVars)
+		// Project
+		auth.GET("/projects", handler.ListProjects)
+		auth.POST("/projects", handler.CreateProject)
 
-	// Collection
-	api.GET("/projects/:pid/collections", handler.ListCollections)
-	api.POST("/projects/:pid/collections", handler.CreateCollection)
-	api.PUT("/collections/:id", handler.UpdateCollection)
-	api.DELETE("/collections/:id", handler.DeleteCollection)
-	api.POST("/collections/:id/move", handler.MoveCollection)
+		// Project sub-resources
+		auth.GET("/projects/:pid/environments", handler.ListEnvironments)
+		auth.POST("/projects/:pid/environments", handler.CreateEnvironment)
+		auth.GET("/projects/:pid/collections", handler.ListCollections)
+		auth.POST("/projects/:pid/collections", handler.CreateCollection)
+		auth.GET("/projects/:pid/test-cases", handler.ListTestCases)
+		auth.POST("/projects/:pid/test-cases", handler.CreateTestCase)
+		auth.GET("/projects/:pid/test-suites", handler.ListTestSuites)
+		auth.POST("/projects/:pid/test-suites", handler.CreateTestSuite)
+		auth.GET("/projects/:pid/schedules", handler.ListScheduledTasks)
+		auth.POST("/projects/:pid/schedules", handler.CreateScheduledTask)
 
-	// API
-	api.GET("/collections/:cid/apis", handler.ListAPIs)
-	api.POST("/collections/:cid/apis", handler.CreateAPI)
-	api.GET("/apis/:id", handler.GetAPI)
-	api.PUT("/apis/:id", handler.UpdateAPI)
-	api.DELETE("/apis/:id", handler.DeleteAPI)
-	api.PUT("/apis/:id/assertions", handler.SaveAssertions)
-	api.GET("/apis/:id/assertions", handler.ListAssertions)
+		// Project CRUD
+		auth.PUT("/projects/:id", handler.UpdateProject)
+		auth.DELETE("/projects/:id", handler.DeleteProject)
 
-	// TestCase
-	api.GET("/projects/:pid/test-cases", handler.ListTestCases)
-	api.POST("/projects/:pid/test-cases", handler.CreateTestCase)
-	api.PUT("/test-cases/:id", handler.UpdateTestCase)
-	api.DELETE("/test-cases/:id", handler.DeleteTestCase)
-	api.PUT("/test-cases/:id/apis", handler.SaveTestCaseAPIs)
+		// Environment
+		env := auth.Group("/environments/:id")
+		{
+			env.PUT("", handler.UpdateEnvironment)
+			env.DELETE("", handler.DeleteEnvironment)
+			env.GET("/variables", handler.ListEnvVars)
+			env.PUT("/variables", handler.SaveEnvVars)
+		}
 
-	// TestDataSet
-	api.GET("/test-case-apis/:id/datasets", handler.ListDataSets)
-	api.PUT("/test-case-apis/:id/datasets", handler.SaveDataSets)
+		// Collection
+		col := auth.Group("/collections/:id")
+		{
+			col.PUT("", handler.UpdateCollection)
+			col.DELETE("", handler.DeleteCollection)
+			col.POST("/move", handler.MoveCollection)
+			col.GET("/apis", handler.ListAPIsByCollection)
+			col.POST("/apis", handler.CreateAPIByCollection)
+		}
 
-	// TestSuite
-	api.GET("/projects/:pid/test-suites", handler.ListTestSuites)
-	api.POST("/projects/:pid/test-suites", handler.CreateTestSuite)
-	api.PUT("/test-suites/:id", handler.UpdateTestSuite)
-	api.DELETE("/test-suites/:id", handler.DeleteTestSuite)
-	api.PUT("/test-suites/:id/cases", handler.SaveTestSuiteCases)
+		// API
+		apir := auth.Group("/apis/:id")
+		{
+			apir.GET("", handler.GetAPI)
+			apir.PUT("", handler.UpdateAPI)
+			apir.DELETE("", handler.DeleteAPI)
+			apir.GET("/assertions", handler.ListAssertions)
+			apir.PUT("/assertions", handler.SaveAssertions)
+		}
 
-	// ScheduledTask
-	api.GET("/projects/:pid/schedules", handler.ListScheduledTasks)
-	api.POST("/projects/:pid/schedules", handler.CreateScheduledTask)
-	api.PUT("/schedules/:id", handler.UpdateScheduledTask)
-	api.DELETE("/schedules/:id", handler.DeleteScheduledTask)
+		// TestCase
+		tc := auth.Group("/test-cases/:id")
+		{
+			tc.PUT("", handler.UpdateTestCase)
+			tc.DELETE("", handler.DeleteTestCase)
+			tc.PUT("/apis", handler.SaveTestCaseAPIs)
+		}
+
+		// TestDataSet
+		auth.GET("/test-case-apis/:id/datasets", handler.ListDataSets)
+		auth.PUT("/test-case-apis/:id/datasets", handler.SaveDataSets)
+
+		// TestSuite
+		ts := auth.Group("/test-suites/:id")
+		{
+			ts.PUT("", handler.UpdateTestSuite)
+			ts.DELETE("", handler.DeleteTestSuite)
+			ts.PUT("/cases", handler.SaveTestSuiteCases)
+		}
+
+		// ScheduledTask
+		auth.PUT("/schedules/:id", handler.UpdateScheduledTask)
+		auth.DELETE("/schedules/:id", handler.DeleteScheduledTask)
+	}
 }

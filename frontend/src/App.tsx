@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react'
 import { ConfigProvider, Layout, Menu, Card, Table, Button, Modal, Form, Input, Space, Popconfirm, message, theme } from 'antd'
-import { ProjectOutlined, ApiOutlined, SettingOutlined } from '@ant-design/icons'
+import { ProjectOutlined, ApiOutlined, SettingOutlined, LogoutOutlined, UserOutlined } from '@ant-design/icons'
 import { useProjectStore, Project } from './stores/projectStore'
+import { useAuthStore } from './stores/authStore'
+import LoginPage from './pages/Login'
 
 const { Sider, Content } = Layout
 
@@ -11,9 +13,6 @@ const pinkTokens = {
   colorBgLayout: '#fff5f7',
   colorBorder: '#ffadd2',
   borderRadius: 12,
-  colorSuccess: '#52c41a',
-  colorWarning: '#faad14',
-  colorError: '#ff4d4f',
   fontFamily: "'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif",
 }
 
@@ -86,6 +85,20 @@ function Placeholder({ title }: { title: string }) {
 
 function App() {
   const [activeKey, setActiveKey] = useState('projects')
+  const { user, token, fetchProfile, logout } = useAuthStore()
+  const [showLogin, setShowLogin] = useState(false)
+
+  useEffect(() => {
+    if (token) fetchProfile()
+  }, [token])
+
+  if (!token || showLogin) {
+    return (
+      <ConfigProvider theme={{ algorithm: theme.defaultAlgorithm, token: pinkTokens }}>
+        <LoginPage onLogin={() => setShowLogin(false)} />
+      </ConfigProvider>
+    )
+  }
 
   const menuItems = [
     { key: 'projects', icon: <ProjectOutlined />, label: '项目管理' },
@@ -103,12 +116,7 @@ function App() {
   }
 
   return (
-    <ConfigProvider
-      theme={{
-        algorithm: theme.defaultAlgorithm,
-        token: pinkTokens,
-      }}
-    >
+    <ConfigProvider theme={{ algorithm: theme.defaultAlgorithm, token: pinkTokens }}>
       <Layout style={{ minHeight: '100vh', background: '#fff5f7' }}>
         <Sider
           width={220}
@@ -131,12 +139,30 @@ function App() {
             selectedKeys={[activeKey]}
             items={menuItems}
             onClick={({ key }) => setActiveKey(key)}
-            style={{
-              background: 'transparent',
-              borderRight: 0,
-              marginTop: 8,
-            }}
+            style={{ background: 'transparent', borderRight: 0, marginTop: 8 }}
           />
+          <div style={{
+            position: 'absolute',
+            bottom: 16,
+            left: 0,
+            right: 0,
+            padding: '12px 20px',
+            borderTop: '1px solid #ffadd2',
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+              <UserOutlined style={{ color: '#f759ab' }} />
+              <span style={{ color: '#f759ab', fontSize: 14 }}>{user?.username}</span>
+            </div>
+            <Button
+              size="small"
+              icon={<LogoutOutlined />}
+              onClick={() => { logout(); setShowLogin(true) }}
+              style={{ color: '#f759ab', borderColor: '#ffadd2' }}
+              block
+            >
+              退出登录
+            </Button>
+          </div>
         </Sider>
         <Layout>
           <Content style={{ padding: 24 }}>

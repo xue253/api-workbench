@@ -8,3 +8,4 @@ venv/
 *.exe
 go.sum
 logs/
+config.yaml

@@ -5,9 +5,21 @@ import (
 	"api-workbench/internal/model"
 )
 
+// User
+func CreateUser(u *model.User) error { return db.DB.Create(u).Error }
+func GetUserByUsername(username string, user *model.User) error {
+	return db.DB.Where("username = ?", username).First(user).Error
+}
+func GetUserByID(id uint, user *model.User) error { return db.DB.First(user, id).Error }
+func UpdateUser(u *model.User) error { return db.DB.Save(u).Error }
+func DeleteUser(id uint) error { return db.DB.Delete(&model.User{}, id).Error }
+func GetUsers(list *[]model.User) error { return db.DB.Find(list).Error }
+
 // Project
 func CreateProject(p *model.Project) error { return db.DB.Create(p).Error }
-func GetProjects(list *[]model.Project) error { return db.DB.Find(list).Error }
+func GetProjectsByUser(uid uint, list *[]model.Project) error {
+	return db.DB.Where("user_id = ?", uid).Find(list).Error
+}
 func GetProjectByID(id uint, p *model.Project) error { return db.DB.First(p, id).Error }
 func UpdateProject(p *model.Project) error { return db.DB.Save(p).Error }
 func DeleteProject(id uint) error { return db.DB.Delete(&model.Project{}, id).Error }
